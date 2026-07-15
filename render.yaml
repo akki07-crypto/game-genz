@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: gamexhub-portal
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: MONGODB_URI
+        value: "mongodb+srv://Akash-kumar:Akashk946552@cluster0.wwyrm6h.mongodb.net/gamexhub?retryWrites=true&w=majority&appName=Cluster0"
+      - key: PORT
+        value: "10000"

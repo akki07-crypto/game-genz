@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tech. Point | Admin Inbox Dashboard</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-dark: #070913;
+            --bg-card: rgba(255, 255, 255, 0.03);
+            --border-card: rgba(255, 255, 255, 0.06);
+            --primary-gradient: linear-gradient(135deg, #00F2FE 0%, #4FACFE 100%);
+            --primary-color: #00F2FE;
+            --text-primary: #FFFFFF;
+            --text-secondary: #B0B5C6;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            padding: 40px 24px;
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(0, 242, 254, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(243, 85, 136, 0.08) 0%, transparent 40%);
+        }
+        
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            border-bottom: 1px solid var(--border-card);
+            padding-bottom: 24px;
+        }
+        
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.2rem;
+        }
+        
+        .logo-accent {
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .btn {
+            background: var(--primary-gradient);
+            color: #070913;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .glass-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(12px);
+            margin-bottom: 30px;
+        }
+        
+        .stats-summary {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-box {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .stat-box h3 {
+            font-size: 2rem;
+            color: var(--primary-color);
+            margin-bottom: 6px;
+        }
+        
+        .stat-box p {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .queries-table-container {
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+        
+        th {
+            padding: 16px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.9rem;
+            border-bottom: 2px solid var(--border-card);
+        }
+        
+        td {
+            padding: 18px 16px;
+            border-bottom: 1px solid var(--border-card);
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            vertical-align: top;
+        }
+        
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.01);
+            color: var(--text-primary);
+        }
+        
+        .name-cell {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .message-text {
+            max-width: 320px;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+        
+        .date-badge {
+            font-size: 0.8rem;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 4px 8px;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+        
+        .no-queries {
+            padding: 40px;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+        
+        .no-queries i {
+            font-size: 3rem;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1><span class="logo-accent">TECH.</span>POINT Admin Dashboard</h1>
+                <p style="color: var(--text-secondary); margin-top: 4px;">Manage contact submissions and course inquiries.</p>
+            </div>
+            <div>
+                <button onclick="fetchQueries()" class="btn"><i class="fa-solid fa-arrows-rotate"></i> Refresh</button>
+                <a href="index.html" class="btn" style="background: transparent; color: white; border: 1px solid var(--border-card); margin-left: 10px;">
+                    <i class="fa-solid fa-arrow-left"></i> Main Site
+                </a>
+            </div>
+        </header>
+
+        <!-- Stats Section -->
+        <div class="stats-summary">
+            <div class="glass-card stat-box">
+                <h3 id="total-queries-count">0</h3>
+                <p>Total Inquiries</p>
+            </div>
+            <div class="glass-card stat-box">
+                <h3 id="today-queries-count">0</h3>
+                <p>Received Today</p>
+            </div>
+        </div>
+
+        <!-- Queries Table -->
+        <div class="glass-card">
+            <h2 style="font-family: 'Outfit', sans-serif; margin-bottom: 20px; font-size: 1.5rem;">Recent Messages</h2>
+            <div class="queries-table-container">
+                <table id="queries-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email Address</th>
+                            <th>Contact Phone</th>
+                            <th>Message Inquiry</th>
+                            <th>Date Submitted</th>
+                        </tr>
+                    </thead>
+                    <tbody id="queries-body">
+                        <tr>
+                            <td colspan="5" class="no-queries">
+                                <i class="fa-solid fa-spinner fa-spin-pulse"></i>
+                                <p>Loading submissions database...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function fetchQueries() {
+            const tableBody = document.getElementById('queries-body');
+            const totalCount = document.getElementById('total-queries-count');
+            const todayCount = document.getElementById('today-queries-count');
+            
+            try {
+                const response = await fetch('/api/contacts');
+                if (!response.ok) throw new Error('Failed to fetch data');
+                
+                const queries = await response.json();
+                
+                // Update total stat
+                totalCount.innerText = queries.length;
+                
+                // Count today's stats
+                const today = new Date().toDateString();
+                const todayList = queries.filter(q => new Date(q.date).toDateString() === today);
+                todayCount.innerText = todayList.length;
+
+                // Sort descending by date (newest first)
+                queries.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                if (queries.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="no-queries">
+                                <i class="fa-regular fa-envelope-open"></i>
+                                <p>No inquiries found in database yet.</p>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                tableBody.innerHTML = '';
+                queries.forEach(q => {
+                    const row = document.createElement('tr');
+                    const localDate = new Date(q.date).toLocaleString();
+                    
+                    row.innerHTML = `
+                        <td class="name-cell">${escapeHTML(q.name)}</td>
+                        <td><a href="mailto:${escapeHTML(q.email)}" style="color: var(--primary-color); text-decoration: none;">${escapeHTML(q.email)}</a></td>
+                        <td><a href="tel:${escapeHTML(q.phone)}" style="color: inherit; text-decoration: none;">${escapeHTML(q.phone)}</a></td>
+                        <td><div class="message-text">${escapeHTML(q.message)}</div></td>
+                        <td><span class="date-badge">${localDate}</span></td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+
+            } catch (err) {
+                console.error(err);
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="no-queries" style="color: #ff5f56;">
+                            <i class="fa-solid fa-circle-exclamation"></i>
+                            <p>Error loading inquiries from server.</p>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        function escapeHTML(str) {
+            if (!str) return '';
+            return str.replace(/[&<>'"]/g, 
+                tag => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    "'": '&#39;',
+                    '"': '&quot;'
+                }[tag] || tag)
+            );
+        }
+
+        // Fetch on load
+        fetchQueries();
+    </script>
+</body>
+</html>

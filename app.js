@@ -785,16 +785,43 @@ async function handleAuthSubmit(e) {
   e.preventDefault();
   const username = document.getElementById('auth-username').value.trim();
   const role = document.getElementById('auth-role').value;
+  const isAdminConnect = document.getElementById('auth-admin-toggle').checked;
+  const passcode = document.getElementById('auth-password').value;
   
   if (!username) return;
 
+  if (isAdminConnect) {
+    if (username.toLowerCase() !== 'admin') {
+      SynthAudio.playError();
+      showToast("Access denied. Admin username must be 'admin'.", "warning");
+      return;
+    }
+    if (passcode !== 'admin123') {
+      SynthAudio.playError();
+      showToast("Clearance code invalid. Connection rejected.", "warning");
+      return;
+    }
+  }
+
   try {
-    const res = await requestAPI('/auth/connect', 'POST', { username, role });
+    const payload = { 
+      username, 
+      role: isAdminConnect ? 'Server Administrator' : role, 
+      isAdmin: isAdminConnect 
+    };
+    const res = await requestAPI('/auth/connect', 'POST', payload);
     if (res.success && res.player) {
       appState = res.player;
       appState.isLoggedIn = true;
       localStorage.setItem('gamex_current_user', appState.username);
       
+      // Clean form inputs
+      document.getElementById('auth-admin-toggle').checked = false;
+      document.getElementById('auth-password-group').style.display = 'none';
+      document.getElementById('auth-role-group').style.display = 'block';
+      document.getElementById('auth-password').value = '';
+      document.getElementById('auth-form').reset();
+
       closeModal('auth-modal');
       updateUI();
       SynthAudio.playLevelUp();
@@ -1662,6 +1689,26 @@ document.addEventListener('DOMContentLoaded', () => {
   // Form binds
   const authForm = document.getElementById('auth-form');
   if (authForm) authForm.addEventListener('submit', handleAuthSubmit);
+
+  const adminToggle = document.getElementById('auth-admin-toggle');
+  if (adminToggle) {
+    adminToggle.addEventListener('change', (e) => {
+      const passwordGroup = document.getElementById('auth-password-group');
+      const roleGroup = document.getElementById('auth-role-group');
+      const passwordInput = document.getElementById('auth-password');
+      
+      if (e.target.checked) {
+        passwordGroup.style.display = 'block';
+        roleGroup.style.display = 'none';
+        passwordInput.required = true;
+      } else {
+        passwordGroup.style.display = 'none';
+        roleGroup.style.display = 'block';
+        passwordInput.required = false;
+        passwordInput.value = '';
+      }
+    });
+  }
 
   const tourneyForm = document.getElementById('tournament-registration-form');
   if (tourneyForm) tourneyForm.addEventListener('submit', handleTournamentFormSubmit);

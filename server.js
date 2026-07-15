@@ -185,20 +185,30 @@ app.get('/api/store', (req, res) => {
 // 1. Authenticate / Connect Player Profile
 app.post('/api/auth/connect', async (req, res) => {
   try {
-    const { username, role } = req.body;
+    const { username, role, isAdmin } = req.body;
     if (!username) {
       return res.status(400).json({ error: 'Player username coordinates missing.' });
     }
 
+    const isUsernameAdmin = username.toLowerCase() === 'admin';
+
+    // Prevent connecting as 'admin' without checked admin checkbox (passcode path)
+    if (isUsernameAdmin && !isAdmin) {
+      return res.status(400).json({ error: "Alias 'admin' is restricted. Toggle the administrator access checkbox and provide the clearance passcode." });
+    }
+
     const player = await getPlayerProfile(username, role);
     
-    // Set admin bypass flags
-    if (username.toLowerCase() === 'admin' && !player.isAdmin) {
+    // Set admin status
+    if (isUsernameAdmin) {
       player.isAdmin = true;
       player.role = 'Server Administrator';
       await savePlayerProfile(player);
-    } else if (role && player.role !== role && username.toLowerCase() !== 'admin') {
-      player.role = role;
+    } else {
+      player.isAdmin = false;
+      if (role && player.role !== role) {
+        player.role = role;
+      }
       await savePlayerProfile(player);
     }
 

@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GAME X HUB - Premium Gen Z Gaming Hub</title>
+  <meta name="description" content="Enter the ultimate dark-cyberpunk gaming lounge. Play, participate in tournaments, earn reward points, and claim exclusive digital loot.">
+  
+  <!-- CSS Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+  <!-- Header Section -->
+  <header class="header" id="header">
+    <div class="container">
+      <a href="#" class="logo">
+        <div class="logo-icon">
+          <div class="logo-inner-dot"></div>
+        </div>
+        GAME<span class="text-gradient-cyan-purple">X</span>HUB
+      </a>
+      
+      <ul class="nav-links" id="nav-links">
+        <li><a href="#" class="nav-link active" data-sec="hero">Home</a></li>
+        <li><a href="#games" class="nav-link" data-sec="games">Games</a></li>
+        <li><a href="#edge" class="nav-link" data-sec="edge">Latency</a></li>
+        <li><a href="#tournaments" class="nav-link" data-sec="tournaments">Tournaments</a></li>
+        <li><a href="#rewards" class="nav-link" data-sec="rewards">Rewards</a></li>
+      </ul>
+      
+      <div class="header-actions">
+        <!-- Default State: Login Button -->
+        <button class="btn btn-secondary btn-sm" id="auth-trigger-btn">
+          <i class="fa-solid fa-right-to-bracket"></i> Join Hub
+        </button>
+        
+        <!-- Logged In State (Hidden by default, toggled via JS) -->
+        <div class="user-pill" id="user-profile-pill" style="display: none;">
+          <div class="user-pill-avatar">
+            <img src="https://images.unsplash.com/photo-1566492031773-4f4e44671857?w=100&auto=format&fit=crop&q=80" alt="Player Avatar" id="user-pill-img">
+          </div>
+          <span class="user-pill-name" id="user-pill-name">CyberGhost</span>
+          <span class="user-pill-points" id="user-pill-points"><i class="fa-solid fa-coins"></i> 150</span>
+        </div>
+        
+        <button class="menu-toggle" id="menu-toggle" aria-label="Toggle Menu">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero" id="hero">
+    <div class="container">
+      <div class="hero-grid">
+        <div class="hero-content reveal active">
+          <div class="hero-tag">
+            <span class="hero-tag-dot"></span> Season 4 Live Now
+          </div>
+          <h1 class="hero-title">
+            ELEVATE YOUR <br>
+            <span class="text-gradient-cyan-purple">GAMEPLAY</span> TO THE <br>
+            <span class="text-gradient-purple-orange font-display">NEXT LEVEL</span>
+          </h1>
+          <p class="hero-desc">
+            Welcome to the ultimate dark-cyberpunk gaming portal. Register for premium live tournaments, play exclusive web titles, and earn reward points to redeem top-tier digital skins.
+          </p>
+          <div class="hero-buttons">
+            <a href="#tournaments" class="btn btn-primary">
+              <i class="fa-solid fa-gamepad"></i> Enter Tourneys
+            </a>
+            <a href="#games" class="btn btn-secondary">
+              <i class="fa-solid fa-compass"></i> Explore Games
+            </a>
+          </div>
+          <div class="hero-stats">
+            <div class="hero-stat-item">
+              <span class="hero-stat-value" id="stat-deployments">65,124</span>
+              <span class="hero-stat-label">Matches Played</span>
+            </div>
+            <div class="hero-stat-item">
+              <span class="hero-stat-value" id="stat-players">324,592</span>
+              <span class="hero-stat-label">Active Players</span>
+            </div>
+            <div class="hero-stat-item">
+              <span class="hero-stat-value">0.02ms</span>
+              <span class="hero-stat-label">Avg Latency</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="hero-visual reveal active">
+          <div class="hologram-stage">
+            <div class="hologram-circle-1"></div>
+            <div class="hologram-circle-2"></div>
+            <div class="hologram-glitch-overlay"></div>
+            <!-- Dynamic Glowing Controller SVG acting as Hologram Character -->
+            <svg class="hologram-character" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M376 96H136C76.35 96 32 144.35 32 204v172c0 22.1 17.9 40 40 40 28.17 0 53.64-14.7 67.43-38.68L176 320h160l36.57 57.32C386.36 401.3 411.83 416 440 416c22.1 0 40-17.9 40-40V204c0-59.65-44.35-108-104-108z" fill="url(#paint0_linear)" stroke="#00f0ff" stroke-width="8" stroke-linejoin="round"/>
+              <circle cx="152" cy="224" r="24" fill="#06020d" stroke="#bd00ff" stroke-width="6"/>
+              <circle cx="360" cy="224" r="24" fill="#06020d" stroke="#bd00ff" stroke-width="6"/>
+              <!-- D-Pad -->
+              <path d="M152 176v96M104 224h96" stroke="#00f0ff" stroke-width="12" stroke-linecap="round"/>
+              <!-- Buttons -->
+              <circle cx="360" cy="184" r="12" fill="#39ff14"/>
+              <circle cx="360" cy="264" r="12" fill="#ffb800"/>
+              <circle cx="320" cy="224" r="12" fill="#bd00ff"/>
+              <circle cx="400" cy="224" r="12" fill="#00f0ff"/>
+              <!-- Select / Start -->
+              <rect x="220" y="240" width="24" height="8" rx="4" fill="#8c829e"/>
+              <rect x="268" y="240" width="24" height="8" rx="4" fill="#8c829e"/>
+              <!-- Glowing Accents -->
+              <path d="M256 128c-40 0-72 32-72 72h144c0-40-32-72-72-72z" fill="rgba(0, 240, 255, 0.1)"/>
+              <defs>
+                <linearGradient id="paint0_linear" x1="32" y1="96" x2="480" y2="416" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#bd00ff" stop-opacity="0.2"/>
+                  <stop offset="1" stop-color="#00f0ff" stop-opacity="0.2"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Highly Recommended Games Section -->
+  <section class="section-padding" id="games">
+    <div class="container">
+      <div class="reveal">
+        <h2 class="section-title">Active <span class="text-gradient-cyan-purple">Game Showcase</span></h2>
+        <p class="section-subtitle">Play curated Web3 titles instantly with no download or setup required.</p>
+      </div>
+      
+      <!-- Filters and Search Bar -->
+      <div class="filter-bar reveal">
+        <div class="filter-tabs" id="game-filter-tabs">
+          <button class="filter-tab active" data-category="all">All Games</button>
+          <button class="filter-tab" data-category="action">Action</button>
+          <button class="filter-tab" data-category="rpg">RPG</button>
+          <button class="filter-tab" data-category="strategy">Strategy</button>
+        </div>
+        
+        <div class="search-box">
+          <i class="fa-solid fa-magnifying-glass search-icon"></i>
+          <input type="text" placeholder="Search matrix games..." class="search-input" id="game-search">
+        </div>
+      </div>
+      
+      <!-- Games Grid Container -->
+      <div class="games-grid reveal" id="games-grid-container">
+        <!-- Filled by JS -->
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive Online Edge Section (Latency Monitor) -->
+  <section class="section-padding" id="edge" style="background: rgba(6, 2, 13, 0.4);">
+    <div class="container">
+      <div class="reveal">
+        <h2 class="section-title">The <span class="text-gradient-cyan-purple">Online Edge</span></h2>
+        <p class="section-subtitle">Ultra-low latency server routing and global server mesh details.</p>
+      </div>
+      
+      <div class="edge-grid">
+        <div class="reveal">
+          <div class="features-list" id="latency-features-list">
+            <div class="feature-item active" data-index="0">
+              <div class="feature-icon-container">
+                <i class="fa-solid fa-bolt"></i>
+              </div>
+              <div class="feature-content">
+                <h3 class="feature-title">Smart Matchmaking</h3>
+                <p class="feature-desc">Matches you with opponents based on geographic physical sub-network proximity for zero-lag matches.</p>
+              </div>
+            </div>
+            
+            <div class="feature-item" data-index="1">
+              <div class="feature-icon-container">
+                <i class="fa-solid fa-route"></i>
+              </div>
+              <div class="feature-content">
+                <h3 class="feature-title">BGP Anycast Routing</h3>
+                <p class="feature-desc">Dynamically redirects packages around congested Internet backbones directly to local game nodes.</p>
+              </div>
+            </div>
+            
+            <div class="feature-item" data-index="2">
+              <div class="feature-icon-container">
+                <i class="fa-solid fa-server"></i>
+              </div>
+              <div class="feature-content">
+                <h3 class="feature-title">Holographic Server Mesh</h3>
+                <p class="feature-desc">Distributed edge container instances spawn dynamically to absorb localized burst capacity.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Interactive Monitor Simulator -->
+        <div class="reveal">
+          <div class="interactive-monitor">
+            <div class="monitor-header">
+              <div class="monitor-dots">
+                <div class="monitor-dot monitor-dot-cyan"></div>
+                <div class="monitor-dot monitor-dot-purple"></div>
+                <div class="monitor-dot"></div>
+              </div>
+              <span id="monitor-title-display">SMART_MATCHMAKER_V4.LOG</span>
+              <span>LIVE</span>
+            </div>
+            
+            <div class="monitor-screen">
+              <div class="latency-indicator" id="latency-radar-container">
+                <div class="latency-radar"></div>
+                <span class="font-display" style="font-size: 0.85rem; color: var(--color-secondary); margin-top: 8px;" id="latency-val-display">8ms</span>
+              </div>
+              
+              <div class="monitor-grid-overlay"></div>
+              
+              <div class="monitor-chart-area" id="monitor-chart-bars">
+                <!-- Sparkline bars rendered by JS -->
+              </div>
+              
+              <div class="monitor-stat-row">
+                <div class="monitor-box">
+                  <div class="monitor-box-value glow-green" id="monitor-ping-val">8ms</div>
+                  <div class="monitor-box-label">Ping</div>
+                </div>
+                <div class="monitor-box">
+                  <div class="monitor-box-value" id="monitor-loss-val">0.0%</div>
+                  <div class="monitor-box-label">Loss</div>
+                </div>
+                <div class="monitor-box">
+                  <div class="monitor-box-value" id="monitor-nodes-val">42/42</div>
+                  <div class="monitor-box-label">Nodes</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Offline Immersion Slider -->
+  <section class="section-padding">
+    <div class="container">
+      <div class="reveal">
+        <h2 class="section-title">Solo <span class="text-gradient-purple-orange">Adventures</span></h2>
+        <p class="section-subtitle">Stunning graphics, deep stories. Discover offline narrative blockbusters.</p>
+      </div>
+      
+      <div class="slider-container reveal" id="solo-slider">
+        <button class="slider-btn-prev" id="slider-prev" aria-label="Previous Slide">
+          <i class="fa-solid fa-chevron-left"></i>
+        </button>
+        <button class="slider-btn-next" id="slider-next" aria-label="Next Slide">
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>
+        
+        <div class="slider-track" id="slider-track">
+          <!-- Slide 1 -->
+          <div class="slider-slide">
+            <img src="https://images.unsplash.com/photo-1542751371-adc38448a05e?w=1200&auto=format&fit=crop&q=80" alt="Ghost of Neo-Tokyo" class="slide-bg">
+            <div class="slide-overlay"></div>
+            <div class="slide-content">
+              <span class="slide-tag">RPG / Cyberpunk</span>
+              <h3 class="slide-title">Ghost of Neo-Tokyo</h3>
+              <p class="slide-desc">In the neon-drenched slums of 2099, a rogue cyber-samurai fights to dismantle the megacorporation holding the last remnants of human consciousness hostage.</p>
+              <button class="btn btn-primary launch-game-btn" data-title="Ghost of Neo-Tokyo">
+                <i class="fa-solid fa-download"></i> View Archives
+              </button>
+            </div>
+          </div>
+          
+          <!-- Slide 2 -->
+          <div class="slider-slide">
+            <img src="https://images.unsplash.com/photo-1612287230202-1bf1d85d1bdf?w=1200&auto=format&fit=crop&q=80" alt="Nebula Odyssey" class="slide-bg">
+            <div class="slide-overlay"></div>
+            <div class="slide-content">
+              <span class="slide-tag">SCI-FI / Exploration</span>
+              <h3 class="slide-title">Nebula Odyssey</h3>
+              <p class="slide-desc">Pilot customizable battleships through anomalous gravity fields, discover procedural solar systems, and forge trade agreements with alien factions.</p>
+              <button class="btn btn-primary launch-game-btn" data-title="Nebula Odyssey">
+                <i class="fa-solid fa-download"></i> View Archives
+              </button>
+            </div>
+          </div>
+          
+          <!-- Slide 3 -->
+          <div class="slider-slide">
+            <img src="https://images.unsplash.com/photo-1511512578047-dfb367046420?w=1200&auto=format&fit=crop&q=80" alt="Valhalla Eternal" class="slide-bg">
+            <div class="slide-overlay"></div>
+            <div class="slide-content">
+              <span class="slide-tag">Fantasy / RPG</span>
+              <h3 class="slide-title">Valhalla Eternal</h3>
+              <p class="slide-desc">A Norse-cyberpunk action RPG featuring dynamic swordplay, modular mech armor upgrades, and strategic raid battles against corrupted cybernetic deities.</p>
+              <button class="btn btn-primary launch-game-btn" data-title="Valhalla Eternal">
+                <i class="fa-solid fa-download"></i> View Archives
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tournaments Arena -->
+  <section class="section-padding" id="tournaments" style="background: rgba(6, 2, 13, 0.4);">
+    <div class="container">
+      <div class="reveal">
+        <h2 class="section-title">Tournaments <span class="text-gradient-cyan-purple">Arena</span></h2>
+        <p class="section-subtitle">Compete against the best, secure your seed, and win massive reward tokens.</p>
+      </div>
+      
+      <div class="tournaments-grid reveal" id="tournaments-grid-container">
+        <!-- Loaded by JS -->
+      </div>
+    </div>
+  </section>
+
+  <!-- Rewards Points & Quests System -->
+  <section class="section-padding" id="rewards">
+    <div class="container">
+      <div class="reveal">
+        <h2 class="section-title">Points <span class="text-gradient-purple-orange">Loot Drop</span></h2>
+        <p class="section-subtitle">Complete daily missions, claim coin payouts, and unlock digital gaming codes.</p>
+      </div>
+      
+      <div class="rewards-grid">
+        <!-- Daily Quests & Daily Checkin -->
+        <div class="reveal">
+          <h3 class="font-display" style="font-size: 1.25rem; margin-bottom: 20px; text-transform: uppercase;">
+            <i class="fa-solid fa-calendar-check" style="color: var(--color-primary);"></i> Daily Quests
+          </h3>
+          
+          <div class="glass-panel checkin-card">
+            <h4 class="font-display" style="font-size: 1rem; margin-bottom: 8px;">DAILY CHECK-IN LOG</h4>
+            <p style="font-size: 0.85rem; color: var(--color-text-muted); margin-bottom: 16px;">Claim consecutive days to boost multiplier yields.</p>
+            <div class="checkin-streak" id="checkin-streak-days">
+              <!-- Day pills generated by JS -->
+            </div>
+            <button class="btn btn-primary btn-sm" id="daily-checkin-claim-btn">
+              Claim Day 1 (+10 XP)
+            </button>
+          </div>
+          
+          <div id="quests-list-container">
+            <!-- Quests generated by JS -->
+          </div>
+        </div>
+        
+        <!-- Loot Redeems (Items shop) -->
+        <div class="reveal">
+          <h3 class="font-display" style="font-size: 1.25rem; margin-bottom: 20px; text-transform: uppercase;">
+            <i class="fa-solid fa-store" style="color: var(--color-secondary);"></i> Redemptions Store
+          </h3>
+          
+          <div class="store-grid" id="store-grid-container">
+            <!-- Items loaded by JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer Section -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <a href="#" class="logo">
+            <div class="logo-icon">
+              <div class="logo-inner-dot"></div>
+            </div>
+            GAME<span class="text-gradient-cyan-purple">X</span>HUB
+          </a>
+          <p class="footer-logo-desc">
+            The next-generation cyberpunk digital matrix. Experience high-end browser games, register for e-sports tournaments, and earn cosmetic digital gear.
+          </p>
+        </div>
+        
+        <div>
+          <h4 class="footer-title">Matrix</h4>
+          <ul class="footer-links">
+            <li><a href="#games" class="footer-link">Showcase</a></li>
+            <li><a href="#edge" class="footer-link">Latency Nodes</a></li>
+            <li><a href="#tournaments" class="footer-link">Arena Log</a></li>
+            <li><a href="#rewards" class="footer-link">Loot Store</a></li>
+          </ul>
+        </div>
+        
+        <div>
+          <h4 class="footer-title">Support</h4>
+          <ul class="footer-links">
+            <li><a href="#" class="footer-link">FAQ Desk</a></li>
+            <li><a href="#" class="footer-link">API Status</a></li>
+            <li><a href="#" class="footer-link">Safety Guild</a></li>
+            <li><a href="#" class="footer-link">Bug Bounty</a></li>
+          </ul>
+        </div>
+        
+        <div>
+          <h4 class="footer-title">Enterprise</h4>
+          <ul class="footer-links">
+            <li><a href="#" class="footer-link">Advertisers</a></li>
+            <li><a href="#" class="footer-link">Whitepaper</a></li>
+            <li><a href="#" class="footer-link">Press Kit</a></li>
+            <li><a href="#" class="footer-link">Careers</a></li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="footer-bottom">
+        <p>&copy; 2026 GAME X HUB. Engineered for zero latency. All Rights Reserved.</p>
+        <div class="footer-socials">
+          <a href="#" class="footer-social-icon" aria-label="Discord"><i class="fa-brands fa-discord"></i></a>
+          <a href="#" class="footer-social-icon" aria-label="X / Twitter"><i class="fa-brands fa-x-twitter"></i></a>
+          <a href="#" class="footer-social-icon" aria-label="Twitch"><i class="fa-brands fa-twitch"></i></a>
+          <a href="#" class="footer-social-icon" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- User Profile Sidebar Drawer -->
+  <div class="drawer" id="profile-drawer">
+    <div class="drawer-header">
+      <h3 class="drawer-title">PLAYER STATS CARD</h3>
+      <button class="modal-close" id="profile-drawer-close" aria-label="Close Profile Card">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+    <div class="drawer-body">
+      <div class="profile-card">
+        <div class="profile-card-glow"></div>
+        <div class="profile-avatar-container">
+          <div class="profile-avatar-glow"></div>
+          <div class="profile-avatar">
+            <img src="" alt="Avatar" id="drawer-avatar-img">
+          </div>
+          <div class="profile-level-badge" id="drawer-level-badge">LVL 12</div>
+        </div>
+        
+        <h4 class="profile-name" id="drawer-profile-name">CyberGhost</h4>
+        <p class="profile-role" id="drawer-profile-role">Pro Matchmaker</p>
+        
+        <div class="profile-points-display">
+          <i class="fa-solid fa-coins"></i> <span id="drawer-coins-display">150</span> XP
+        </div>
+        
+        <div class="profile-xp-bar">
+          <div class="profile-xp-text">
+            <span>XP Progress</span>
+            <span id="drawer-xp-percent">65%</span>
+          </div>
+          <div class="profile-xp-track">
+            <div class="profile-xp-fill" id="drawer-xp-fill" style="width: 65%;"></div>
+          </div>
+        </div>
+      </div>
+      
+      <div>
+        <h4 class="drawer-section-title">Cosmetics Inventory</h4>
+        <div class="inventory-grid" id="drawer-inventory-grid">
+          <!-- Filled by JS -->
+        </div>
+      </div>
+      
+      <div>
+        <h4 class="drawer-section-title">Active Tournaments</h4>
+        <div id="drawer-tournaments-list">
+          <!-- Filled by JS -->
+        </div>
+      </div>
+      
+      <button class="btn btn-outline btn-sm" id="logout-btn" style="width: 100%; margin-top: auto; border-color: rgba(255, 59, 48, 0.3); color: #ff3b30;">
+        <i class="fa-solid fa-power-off"></i> Disconnect Session
+      </button>
+    </div>
+  </div>
+
+  <!-- Tournament Registration Modal Overlay -->
+  <div class="modal-overlay" id="tournament-modal">
+    <div class="modal-content">
+      <button class="modal-close" id="tournament-modal-close" aria-label="Close Registration Form">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <h3 class="modal-title">REGISTER FOR TOURNAMENT</h3>
+      <p class="modal-subtitle" id="tournament-modal-subtitle">Valorant Cyber Cup | Prize: 5,000 XP</p>
+      
+      <form id="tournament-registration-form">
+        <input type="hidden" id="register-tournament-id">
+        <div class="form-group">
+          <label class="form-label" for="reg-discord">Discord Username</label>
+          <input type="text" id="reg-discord" class="form-control" placeholder="e.g. cyber_ghost#9999" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="reg-team">Team Name (Optional)</label>
+          <input type="text" id="reg-team" class="form-control" placeholder="e.g. Team Antigravity">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="reg-rank">Competitive Rank</label>
+          <select id="reg-rank" class="form-control" required>
+            <option value="" disabled selected>Select Rank</option>
+            <option value="bronze">Bronze / Silver</option>
+            <option value="gold">Gold / Platinum</option>
+            <option value="diamond">Diamond / Ascendant</option>
+            <option value="immortal">Immortal / Radiant</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 12px;">
+          <i class="fa-solid fa-signature"></i> Finalize Registration
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Authentication Modal Overlay (Login) -->
+  <div class="modal-overlay" id="auth-modal">
+    <div class="modal-content">
+      <button class="modal-close" id="auth-modal-close" aria-label="Close Login Form">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <h3 class="modal-title">CONNECT USER ID</h3>
+      <p class="modal-subtitle">Authenticate into the matrix to track progress and register for rewards.</p>
+      
+      <form id="auth-form">
+        <div class="form-group">
+          <label class="form-label" for="auth-username">Player Alias</label>
+          <input type="text" id="auth-username" class="form-control" placeholder="e.g. NeoSlayer" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="auth-role">Player Specialty</label>
+          <select id="auth-role" class="form-control" required>
+            <option value="Fighter">Fighter / Duelist</option>
+            <option value="Tactician">Tactician / In-Game Lead</option>
+            <option value="Support">Support / Healer</option>
+            <option value="Sniper">Sniper / Marksman</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 12px;">
+          <i class="fa-solid fa-plug"></i> Establish Connection
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Playable Arcade Game Modal -->
+  <div class="modal-overlay" id="arcade-modal">
+    <div class="modal-content" style="max-width: 600px; padding: 24px; background: #080314;">
+      <button class="modal-close" id="arcade-modal-close" aria-label="Close Arcade Cabinet">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <h3 class="modal-title font-display text-gradient-cyan-purple" style="font-size: 1.5rem; text-align: center; margin-bottom: 12px;">CYBERNETIC ESCANDANCY</h3>
+      <p class="modal-subtitle" style="text-align: center; margin-bottom: 16px;">Destroy incoming rogue cyber-drones. Earn 1 XP per drone destroyed!</p>
+      
+      <div style="position: relative; background: #000; border: 2px solid var(--color-border); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; align-items: center;">
+        <div style="width: 100%; display: flex; justify-content: space-between; padding: 8px 16px; background: rgba(189, 0, 255, 0.1); border-bottom: 1px solid var(--color-border); font-family: var(--font-display); font-size: 0.8rem;">
+          <span style="color: var(--color-secondary);">SCORE: <span id="arcade-score">0</span></span>
+          <span style="color: var(--color-accent);">XP EARNED: <span id="arcade-xp-earned">0</span></span>
+          <span style="color: var(--color-warning);">HIGH SCORE: <span id="arcade-highscore">0</span></span>
+        </div>
+        <canvas id="arcade-canvas" width="500" height="320" style="background: #020108; display: block; max-width: 100%;"></canvas>
+        
+        <!-- Game Over overlay -->
+        <div id="arcade-gameover-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(6, 2, 13, 0.9); display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; z-index: 100;">
+          <h4 class="font-display text-gradient-purple-orange" style="font-size: 2.25rem; margin-bottom: 12px; animation: pulse-glow 1.5s infinite alternate;">SYSTEM OVERRIDE</h4>
+          <p style="font-size: 0.9rem; color: var(--color-text-muted); margin-bottom: 24px;" id="arcade-gameover-msg">Drones bypassed defense protocols.</p>
+          <button class="btn btn-primary btn-sm" id="arcade-restart-btn">
+            <i class="fa-solid fa-rotate-left"></i> Boot Reload
+          </button>
+        </div>
+
+        <!-- Start Screen overlay -->
+        <div id="arcade-start-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(6, 2, 13, 0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; z-index: 100;">
+          <h4 class="font-display" style="font-size: 1.8rem; margin-bottom: 12px; color: var(--color-secondary);">SYSTEM READY</h4>
+          <p style="font-size: 0.85rem; color: var(--color-text-muted); max-width: 320px; margin-bottom: 24px;">
+            Use <strong style="color: #fff;">A / D</strong> or <strong style="color: #fff;">LEFT / RIGHT</strong> arrows to drift.<br>
+            Press <strong style="color: #fff;">SPACEBAR</strong> to trigger lasers.
+          </p>
+          <button class="btn btn-primary btn-sm" id="arcade-start-btn">
+            <i class="fa-solid fa-power-off"></i> Establish Interface
+          </button>
+        </div>
+      </div>
+      
+      <!-- Audio Synth Control Panel -->
+      <div style="margin-top: 16px; display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--color-text-muted); background: rgba(255,255,255,0.02); padding: 8px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+        <span><i class="fa-solid fa-volume-high"></i> Synthesizer Volume</span>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <input type="range" id="sound-volume" min="0" max="100" value="50" style="accent-color: var(--color-primary); cursor: pointer; width: 80px;">
+          <span id="sound-volume-display">50%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dynamic Toast Container -->
+  <div class="toast-container" id="toast-container">
+    <!-- Active toasts will insert here -->
+  </div>
+
+  <!-- App JavaScript -->
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-// GAME X HUB - Core Client Application (Full-Stack & Interactive Arcade)
+// GAME X HUB - Core Client Application (Full-Stack, RBAC & Playable Arcade)
 
 // ==========================================
 // 1. STATE & STATIC CONFIG
@@ -64,52 +64,9 @@ const GAMES_DATA = [
   }
 ];
 
-const TOURNAMENTS_DATA = [
-  {
-    id: 'val-cyber-cup',
-    title: 'Valorant Cyber Cup',
-    prize: '5,000 XP',
-    slotsMax: 16,
-    date: 'July 20, 2026',
-    time: '18:00 UTC',
-    tag: '5v5 Tactical',
-    status: 'live'
-  },
-  {
-    id: 'league-masters',
-    title: 'League of Masters',
-    prize: '7,500 XP',
-    slotsMax: 32,
-    date: 'July 24, 2026',
-    time: '19:00 UTC',
-    tag: '5v5 MOBA',
-    status: 'upcoming'
-  },
-  {
-    id: 'apex-void-run',
-    title: 'Apex Legends Void Run',
-    prize: '6,000 XP',
-    slotsMax: 24,
-    date: 'July 28, 2026',
-    time: '17:00 UTC',
-    tag: 'Trios Battle Royale',
-    status: 'upcoming'
-  }
-];
-
-const STORE_ITEMS = [
-  { id: 'skin-neon-blade', name: 'Neon Blade Skin', cost: 200, emoji: '⚔️', icon: 'fa-solid fa-wand-magic-sparkles' },
-  { id: 'hud-overlay', name: 'Cyberpunk HUD', cost: 350, emoji: '📐', icon: 'fa-solid fa-compass-drafting' },
-  { id: 'avatar-border', name: 'Glitch Border', cost: 150, emoji: '🟢', icon: 'fa-solid fa-circle-nodes' },
-  { id: 'weapon-wrap', name: 'Matrix Wrap', cost: 450, emoji: '🔫', icon: 'fa-solid fa-gun' }
-];
-
-const INITIAL_QUESTS = [
-  { id: 'quest-checkin', name: 'First Check-in', desc: 'Log check-in status to claim initial XP yields.', points: 50 },
-  { id: 'quest-register', name: 'Arena Challenger', desc: 'Sign up for any live or upcoming tournament bracket.', points: 100 },
-  { id: 'quest-latency', name: 'Network Auditor', desc: 'Click and inspect all three online routing node features.', points: 75 },
-  { id: 'quest-loot', name: 'Loot Collector', desc: 'Redeem points for cosmetic gear at the store.', points: 120 }
-];
+// Lists filled dynamically from backend server
+const TOURNAMENTS_DATA = [];
+const STORE_ITEMS = [];
 
 // Offline Local Database State (if backend server is down)
 let localState = {
@@ -123,7 +80,8 @@ let localState = {
   inventory: [],
   registrations: [],
   viewedLatencyIndices: [],
-  completedQuests: []
+  completedQuests: [],
+  isAdmin: false
 };
 
 // Global App State (Runtime Cache)
@@ -138,7 +96,8 @@ let appState = {
   inventory: [],
   registrations: [],
   viewedLatencyIndices: [],
-  completedQuests: []
+  completedQuests: [],
+  isAdmin: false
 };
 
 let serverConnectionFailed = false;
@@ -176,7 +135,6 @@ const SynthAudio = {
     this.init();
     if (!this.ctx) return;
     
-    // Resume audio context if browser suspended it due to click constraints
     if (this.ctx.state === 'suspended') {
       this.ctx.resume();
     }
@@ -206,7 +164,6 @@ const SynthAudio = {
 
   playExplosion() {
     this.playOscillator(150, 40, 'triangle', 0.4);
-    // Add noise click sound
     this.playOscillator(300, 20, 'sawtooth', 0.1);
   },
 
@@ -215,7 +172,6 @@ const SynthAudio = {
   },
 
   playCheckin() {
-    // Beautiful upward synth run
     const notes = [261.63, 329.63, 392.00, 523.25]; // C4, E4, G4, C5
     notes.forEach((freq, idx) => {
       this.playOscillator(freq, freq, 'sine', 0.15, idx * 0.08);
@@ -238,7 +194,6 @@ const SynthAudio = {
 // 3. BACKEND API INTERACTION LAYER
 // ==========================================
 
-// Synchronize state with backend API (falls back to localStorage)
 async function requestAPI(endpoint, method = 'GET', body = null) {
   if (serverConnectionFailed) {
     return handleOfflineFallback(endpoint, method, body);
@@ -267,9 +222,7 @@ async function requestAPI(endpoint, method = 'GET', body = null) {
   }
 }
 
-// Fallback logic wrapper simulating endpoints via localStorage
 function handleOfflineFallback(endpoint, method, body) {
-  // Sync state from storage if necessary
   const localSaved = localStorage.getItem('gamex_state');
   if (localSaved) {
     localState = JSON.parse(localSaved);
@@ -279,7 +232,14 @@ function handleOfflineFallback(endpoint, method, body) {
     const { username, role } = body;
     localState.isLoggedIn = true;
     localState.username = username;
-    if (role) localState.role = role;
+    localState.isAdmin = username.toLowerCase() === 'admin';
+    if (localState.isAdmin) {
+      localState.role = 'Server Administrator';
+      localState.points = 9999;
+      localState.level = 99;
+    } else if (role) {
+      localState.role = role;
+    }
     saveLocalState();
     return { success: true, player: localState };
   }
@@ -299,7 +259,9 @@ function handleOfflineFallback(endpoint, method, body) {
     localState.points += xpPayout;
     localState.lastCheckInDate = today;
     localState.checkInStreak = nextStreak > 7 ? 1 : nextStreak;
-    localState.level = Math.floor(localState.points / 100) + 1;
+    if (!localState.isAdmin) {
+      localState.level = Math.floor(localState.points / 100) + 1;
+    }
     saveLocalState();
     return { success: true, player: localState, xpPayout, streak: localState.checkInStreak };
   }
@@ -309,7 +271,9 @@ function handleOfflineFallback(endpoint, method, body) {
     if (!localState.completedQuests.includes(questId)) {
       localState.points += points;
       localState.completedQuests.push(questId);
-      localState.level = Math.floor(localState.points / 100) + 1;
+      if (!localState.isAdmin) {
+        localState.level = Math.floor(localState.points / 100) + 1;
+      }
       saveLocalState();
     }
     return { success: true, player: localState };
@@ -321,7 +285,9 @@ function handleOfflineFallback(endpoint, method, body) {
       throw new Error('Insufficient XP nodes to complete transaction.');
     }
     localState.points -= cost;
-    localState.level = Math.floor(localState.points / 100) + 1;
+    if (!localState.isAdmin) {
+      localState.level = Math.floor(localState.points / 100) + 1;
+    }
     
     const item = localState.inventory.find(i => i.itemId === itemId);
     if (item) {
@@ -345,7 +311,9 @@ function handleOfflineFallback(endpoint, method, body) {
   if (endpoint.startsWith('/arcade/score')) {
     const { score } = body;
     localState.points += score;
-    localState.level = Math.floor(localState.points / 100) + 1;
+    if (!localState.isAdmin) {
+      localState.level = Math.floor(localState.points / 100) + 1;
+    }
     saveLocalState();
     return { success: true, player: localState };
   }
@@ -366,26 +334,42 @@ function saveLocalState() {
   localStorage.setItem('gamex_state', JSON.stringify(localState));
 }
 
-// Get YYYY-MM-DD date string
-function getTodayString() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-// Calculate level milestones
-function getPlayerLevelMetrics() {
-  const points = appState.points;
-  const level = Math.floor(points / 100) + 1;
-  const pointsInCurrentLevel = points % 100;
-  return { level, xpPercent: pointsInCurrentLevel };
-}
-
 // ==========================================
 // 4. RENDERING & UI CONTROL ENGINES
 // ==========================================
 
 async function loadAppState() {
   const savedUser = localStorage.getItem('gamex_current_user');
+  
+  // A. Fetch tournaments dynamically
+  try {
+    const res = await fetch(`${API_BASE}/tournaments`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.tournaments) {
+        TOURNAMENTS_DATA.length = 0;
+        TOURNAMENTS_DATA.push(...data.tournaments);
+      }
+    }
+  } catch (e) {
+    console.warn("Could not retrieve tournaments from server API, using local backup.");
+  }
+
+  // B. Fetch store items dynamically
+  try {
+    const res = await fetch(`${API_BASE}/store`);
+    if (res.ok) {
+      const data = await res.json();
+      if (data.store) {
+        STORE_ITEMS.length = 0;
+        STORE_ITEMS.push(...data.store);
+      }
+    }
+  } catch (e) {
+    console.warn("Could not retrieve store skins from server API, using local backup.");
+  }
+
+  // C. Authenticate session
   if (savedUser) {
     try {
       const res = await requestAPI(`/user/profile/${savedUser}`);
@@ -394,11 +378,15 @@ async function loadAppState() {
         appState.isLoggedIn = true;
       }
     } catch (e) {
-      console.error("Error loading app state", e);
+      console.error("Error loading app state:", e);
     }
   } else {
     appState = { ...DEFAULT_USER_MOCK() };
   }
+
+  renderGames();
+  renderTournaments();
+  renderStore();
   updateUI();
 }
 
@@ -414,13 +402,15 @@ function DEFAULT_USER_MOCK() {
     inventory: [],
     registrations: [],
     viewedLatencyIndices: [],
-    completedQuests: []
+    completedQuests: [],
+    isAdmin: false
   };
 }
 
 function updateUI() {
   const guestTrigger = document.getElementById('auth-trigger-btn');
   const userPill = document.getElementById('user-profile-pill');
+  const adminNavItem = document.getElementById('admin-nav-item');
 
   if (appState.isLoggedIn) {
     guestTrigger.style.display = 'none';
@@ -428,7 +418,7 @@ function updateUI() {
     document.getElementById('user-pill-name').textContent = appState.username;
     document.getElementById('user-pill-points').innerHTML = `<i class="fa-solid fa-coins"></i> ${appState.points} XP`;
     
-    // Set Drawer details
+    // Set Drawer Profile Card Details
     document.getElementById('drawer-profile-name').textContent = appState.username;
     document.getElementById('drawer-profile-role').textContent = appState.role + " | Level " + getPlayerLevelMetrics().level;
     document.getElementById('drawer-coins-display').textContent = appState.points;
@@ -438,18 +428,25 @@ function updateUI() {
     document.getElementById('drawer-xp-percent').textContent = `${metrics.xpPercent}%`;
     document.getElementById('drawer-xp-fill').style.width = `${metrics.xpPercent}%`;
     
+    // Show Admin Console navigation tab if elevated status
+    if (appState.isAdmin) {
+      adminNavItem.style.display = 'block';
+    } else {
+      adminNavItem.style.display = 'none';
+    }
+
     renderInventoryDrawer();
     renderRegisteredTournamentsDrawer();
   } else {
     guestTrigger.style.display = 'block';
     userPill.style.display = 'none';
+    adminNavItem.style.display = 'none';
   }
 
   renderDailyCheckinStreak();
   renderQuestsList();
 }
 
-// Render Games Showcase
 function renderGames(filterCategory = 'all', searchQuery = '') {
   const container = document.getElementById('games-grid-container');
   if (!container) return;
@@ -478,8 +475,6 @@ function renderGames(filterCategory = 'all', searchQuery = '') {
     const card = document.createElement('div');
     card.className = 'game-card';
     
-    const tagsHtml = game.tags.map(tag => `<span>#${tag}</span>`).join(' ');
-
     card.innerHTML = `
       <div class="game-card-media">
         <span class="game-card-tag">${game.category}</span>
@@ -502,9 +497,8 @@ function renderGames(filterCategory = 'all', searchQuery = '') {
     container.appendChild(card);
   });
 
-  // Attach launch buttons
   container.querySelectorAll('.launch-game-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', () => {
       const id = btn.getAttribute('data-id');
       const title = btn.getAttribute('data-title');
       SynthAudio.playClick();
@@ -513,14 +507,12 @@ function renderGames(filterCategory = 'all', searchQuery = '') {
   });
 }
 
-// Fetch and render Tournaments
 async function renderTournaments() {
   const container = document.getElementById('tournaments-grid-container');
   if (!container) return;
 
   container.innerHTML = '';
 
-  // Retrieve real-time registered counts from server
   try {
     const res = await fetch(`${API_BASE}/tournaments/slots`);
     if (res.ok) {
@@ -540,8 +532,7 @@ async function renderTournaments() {
     const btnClass = isRegistered ? 'btn-outline' : 'btn-primary';
     const btnDisabled = isRegistered ? 'disabled' : '';
     
-    // Calculate slots percentage
-    const currentReg = tournamentSlots[tourney.id] || tourney.slotsMax / 2;
+    const currentReg = tournamentSlots[tourney.id] || 0;
     const slotsPct = (currentReg / tourney.slotsMax) * 100;
     
     card.innerHTML = `
@@ -588,7 +579,6 @@ async function renderTournaments() {
     container.appendChild(card);
   });
 
-  // Attach buttons
   container.querySelectorAll('.register-tourney-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const tourneyId = btn.getAttribute('data-id');
@@ -621,7 +611,6 @@ function renderDailyCheckinStreak() {
     container.appendChild(node);
   }
 
-  // Update claim button text
   const claimBtn = document.getElementById('daily-checkin-claim-btn');
   if (claimBtn) {
     if (hasCheckedInToday()) {
@@ -637,11 +626,6 @@ function renderDailyCheckinStreak() {
   }
 }
 
-function hasCheckedInToday() {
-  if (!appState.lastCheckInDate) return false;
-  return appState.lastCheckInDate === getTodayString();
-}
-
 function renderQuestsList() {
   const container = document.getElementById('quests-list-container');
   if (!container) return;
@@ -650,7 +634,6 @@ function renderQuestsList() {
   
   const quests = INITIAL_QUESTS.map(q => {
     let status = 'locked';
-    
     if (appState.completedQuests.includes(q.id)) {
       status = 'completed';
     } else {
@@ -693,7 +676,6 @@ function renderQuestsList() {
     container.appendChild(node);
   });
 
-  // Attach button triggers
   container.querySelectorAll('.quest-claim-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const questId = btn.getAttribute('data-id');
@@ -729,7 +711,6 @@ function renderStore() {
     container.appendChild(card);
   });
 
-  // Attach button triggers
   container.querySelectorAll('.buy-item-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const itemId = btn.getAttribute('data-id');
@@ -800,7 +781,6 @@ function renderRegisteredTournamentsDrawer() {
 // 5. EVENT ACTIONS & CORE HANDLERS
 // ==========================================
 
-// Authenticate Connection
 async function handleAuthSubmit(e) {
   e.preventDefault();
   const username = document.getElementById('auth-username').value.trim();
@@ -826,7 +806,6 @@ async function handleAuthSubmit(e) {
   }
 }
 
-// Logout session
 function handleLogout() {
   localStorage.removeItem('gamex_current_user');
   appState = { ...DEFAULT_USER_MOCK() };
@@ -836,7 +815,6 @@ function handleLogout() {
   showToast('Player interface disconnected.', 'info');
 }
 
-// Claim Daily check-in streak rewards
 async function handleDailyCheckin() {
   if (!appState.isLoggedIn) {
     openModal('auth-modal');
@@ -858,7 +836,6 @@ async function handleDailyCheckin() {
   }
 }
 
-// Claim Quest Reward
 async function handleClaimQuest(questId, points) {
   if (!appState.isLoggedIn) {
     openModal('auth-modal');
@@ -879,7 +856,6 @@ async function handleClaimQuest(questId, points) {
   }
 }
 
-// Purchase skin store item
 async function handleBuyItem(itemId, cost) {
   if (!appState.isLoggedIn) {
     openModal('auth-modal');
@@ -901,7 +877,6 @@ async function handleBuyItem(itemId, cost) {
   }
 }
 
-// Trigger tournament signup modal
 function handleTournamentJoinTrigger(tourneyId) {
   if (!appState.isLoggedIn) {
     openModal('auth-modal');
@@ -917,7 +892,6 @@ function handleTournamentJoinTrigger(tourneyId) {
   openModal('tournament-modal');
 }
 
-// Submit Tournament Signup
 async function handleTournamentFormSubmit(e) {
   e.preventDefault();
   const tournamentId = document.getElementById('register-tournament-id').value;
@@ -941,14 +915,11 @@ async function handleTournamentFormSubmit(e) {
   }
 }
 
-// Launching Web Games
 function handleLaunchGame(gameId, gameTitle) {
   if (gameId === 'cyber-ascendancy') {
-    // Launch Canvas Space Shooter
     openModal('arcade-modal');
     initArcadeGame();
   } else {
-    // Normal loading mock
     showToast(`Injecting client assemblies for "${gameTitle}"...`, 'info');
     setTimeout(() => {
       SynthAudio.playLevelUp();
@@ -973,7 +944,6 @@ function initArcadeGame() {
   const restartBtn = document.getElementById('arcade-restart-btn');
   const startBtn = document.getElementById('arcade-start-btn');
 
-  // Reset overlays
   startOverlay.style.display = 'flex';
   gameoverOverlay.style.display = 'none';
 
@@ -982,7 +952,6 @@ function initArcadeGame() {
   let highscore = parseInt(localStorage.getItem('arcade_highscore') || '0', 10);
   document.getElementById('arcade-highscore').textContent = highscore;
 
-  // Game elements state
   let player = {
     x: canvas.width / 2,
     y: canvas.height - 35,
@@ -994,9 +963,8 @@ function initArcadeGame() {
 
   let enemies = [];
   let enemySpawnTimer = 0;
-  let enemySpawnInterval = 45; // ticks
+  let enemySpawnInterval = 45;
 
-  // Input states
   let keys = {
     ArrowLeft: false,
     ArrowRight: false,
@@ -1005,7 +973,6 @@ function initArcadeGame() {
     Space: false
   };
 
-  // Laser rate limit
   let fireCooldown = 0;
 
   function handleKeyDown(e) {
@@ -1013,7 +980,7 @@ function initArcadeGame() {
     if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.ArrowRight = true;
     if (e.code === 'Space') {
       keys.Space = true;
-      e.preventDefault(); // prevent scroll
+      e.preventDefault();
     }
   }
 
@@ -1023,7 +990,6 @@ function initArcadeGame() {
     if (e.code === 'Space') keys.Space = false;
   }
 
-  // Clear events to avoid duplicate listeners
   window.removeEventListener('keydown', handleKeyDown);
   window.removeEventListener('keyup', handleKeyUp);
   window.addEventListener('keydown', handleKeyDown);
@@ -1050,14 +1016,12 @@ function initArcadeGame() {
     arcadeGameActive = false;
     cancelAnimationFrame(arcadeGameLoop);
     
-    // Save highscore
     if (score > highscore) {
       highscore = score;
       localStorage.setItem('arcade_highscore', score);
       document.getElementById('arcade-highscore').textContent = score;
     }
 
-    // Award XP points directly to user account
     if (xpEarned > 0 && appState.isLoggedIn) {
       requestAPI('/arcade/score', 'POST', { username: appState.username, score: xpEarned })
         .then(res => {
@@ -1082,53 +1046,33 @@ function initArcadeGame() {
 
   function loop() {
     if (!arcadeGameActive) return;
-
     update();
     draw();
-
     arcadeGameLoop = requestAnimationFrame(loop);
   }
 
   function update() {
-    // 1. Move Player
-    if (keys.ArrowLeft) {
-      player.x -= player.speed;
-    }
-    if (keys.ArrowRight) {
-      player.x += player.speed;
-    }
+    if (keys.ArrowLeft) player.x -= player.speed;
+    if (keys.ArrowRight) player.x += player.speed;
 
-    // Border constraints
     player.x = Math.max(player.width / 2, Math.min(canvas.width - player.width / 2, player.x));
 
-    // 2. Shoot lasers
     if (fireCooldown > 0) fireCooldown--;
     
     if (keys.Space && fireCooldown === 0) {
-      player.lasers.push({
-        x: player.x,
-        y: player.y - player.height / 2,
-        speed: 8,
-        radius: 3
-      });
+      player.lasers.push({ x: player.x, y: player.y - player.height / 2, speed: 8, radius: 3 });
       SynthAudio.playLaser();
-      fireCooldown = 12; // cooldow ticks
+      fireCooldown = 12;
     }
 
-    // 3. Move lasers
     player.lasers.forEach((laser, idx) => {
       laser.y -= laser.speed;
-      // remove offscreen lasers
-      if (laser.y < 0) {
-        player.lasers.splice(idx, 1);
-      }
+      if (laser.y < 0) player.lasers.splice(idx, 1);
     });
 
-    // 4. Spawn enemies
     enemySpawnTimer++;
     if (enemySpawnTimer >= enemySpawnInterval) {
       enemySpawnTimer = 0;
-      // Spawn at random top coordinates
       enemies.push({
         x: Math.random() * (canvas.width - 30) + 15,
         y: -10,
@@ -1136,22 +1080,18 @@ function initArcadeGame() {
         height: 18,
         speed: Math.random() * 2 + 1.5
       });
-      // Gradually speed up spawning
       if (enemySpawnInterval > 20 && Math.random() < 0.1) enemySpawnInterval--;
     }
 
-    // 5. Move enemies
     enemies.forEach((enemy, idx) => {
       enemy.y += enemy.speed;
       
-      // Check collision with player
       const distToPlayer = Math.hypot(enemy.x - player.x, enemy.y - player.y);
       if (distToPlayer < (enemy.width + player.width) / 2) {
         SynthAudio.playExplosion();
         stop("Your starship was disintegrated.");
       }
 
-      // Check if bypassed player border
       if (enemy.y > canvas.height) {
         enemies.splice(idx, 1);
         SynthAudio.playError();
@@ -1159,15 +1099,12 @@ function initArcadeGame() {
       }
     });
 
-    // 6. Laser Collision detection
     player.lasers.forEach((laser, lIdx) => {
       enemies.forEach((enemy, eIdx) => {
         const dist = Math.hypot(laser.x - enemy.x, laser.y - enemy.y);
         if (dist < laser.radius + enemy.width / 2) {
-          // Destory both
           player.lasers.splice(lIdx, 1);
           enemies.splice(eIdx, 1);
-          
           score++;
           xpEarned++;
           document.getElementById('arcade-score').textContent = score;
@@ -1181,7 +1118,6 @@ function initArcadeGame() {
   function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw Cyber-Grid Background lines
     ctx.strokeStyle = 'rgba(189, 0, 255, 0.08)';
     ctx.lineWidth = 1;
     for (let x = 0; x < canvas.width; x += 30) {
@@ -1197,7 +1133,6 @@ function initArcadeGame() {
       ctx.stroke();
     }
 
-    // Draw Laser Projectiles (Neon Cyan)
     ctx.fillStyle = '#00f0ff';
     ctx.shadowBlur = 10;
     ctx.shadowColor = '#00f0ff';
@@ -1207,7 +1142,6 @@ function initArcadeGame() {
       ctx.fill();
     });
 
-    // Draw Enemy Drones (Neon Red Squares)
     ctx.fillStyle = '#ff3b30';
     ctx.strokeStyle = '#ff3b30';
     ctx.shadowColor = '#ff3b30';
@@ -1217,7 +1151,6 @@ function initArcadeGame() {
       ctx.strokeRect(enemy.x - enemy.width / 2, enemy.y - enemy.height / 2, enemy.width, enemy.height);
     });
 
-    // Draw Player Starship (Neon Cyan Triangle)
     ctx.fillStyle = '#00f0ff';
     ctx.strokeStyle = '#bd00ff';
     ctx.lineWidth = 2;
@@ -1225,26 +1158,23 @@ function initArcadeGame() {
     ctx.shadowBlur = 15;
 
     ctx.beginPath();
-    ctx.moveTo(player.x, player.y - player.height / 2); // Nose
-    ctx.lineTo(player.x - player.width / 2, player.y + player.height / 2); // Left tail
-    ctx.lineTo(player.x + player.width / 2, player.y + player.height / 2); // Right tail
+    ctx.moveTo(player.x, player.y - player.height / 2);
+    ctx.lineTo(player.x - player.width / 2, player.y + player.height / 2);
+    ctx.lineTo(player.x + player.width / 2, player.y + player.height / 2);
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
-
-    // Reset shadow properties
     ctx.shadowBlur = 0;
   }
 }
 
-// Stop game loop on modal exit
 document.getElementById('arcade-modal-close').addEventListener('click', () => {
   arcadeGameActive = false;
   closeModal('arcade-modal');
 });
 
 // ==========================================
-// 7. LATENCY MONITOR & COMPONENT HOOKS
+// 7. LATENCY MONITOR LOGIC
 // ==========================================
 
 const LATENCY_MONITOR_MODES = [
@@ -1269,7 +1199,6 @@ function initLatencyMonitor() {
       const mode = LATENCY_MONITOR_MODES[idx];
       document.getElementById('monitor-title-display').textContent = mode.title;
       
-      // Update check viewed feature for quest logs
       if (appState.isLoggedIn && !appState.viewedLatencyIndices.includes(idx)) {
         appState.viewedLatencyIndices.push(idx);
         requestAPI('/user/latency', 'POST', { username: appState.username, index: idx })
@@ -1281,10 +1210,8 @@ function initLatencyMonitor() {
           });
       }
 
-      // Display Radar Pulse
       const radar = document.getElementById('latency-radar-container');
       radar.style.display = mode.radarPulse ? 'flex' : 'none';
-
       updateLatencyStats();
     });
   });
@@ -1334,10 +1261,194 @@ function renderLatencyChart() {
 }
 
 // ==========================================
-// 8. ELEMENT MOUNT & GLOBAL ROUTING
+// 8. SERVER-SIDE ADMINISTRATIVE DASHBOARD (RBAC)
 // ==========================================
 
-// Slider mechanism
+async function loadAdminStats() {
+  if (!appState.isLoggedIn || !appState.isAdmin) return;
+
+  try {
+    const res = await requestAPI('/admin/stats', 'POST', { username: appState.username });
+    if (res.success && res.stats) {
+      document.getElementById('admin-stat-users').textContent = res.stats.totalPlayers;
+      document.getElementById('admin-stat-tourneys').textContent = res.stats.tournamentsCount;
+      document.getElementById('admin-stat-store').textContent = res.stats.storeItemsCount;
+      document.getElementById('admin-db-mode').textContent = res.stats.databaseMode;
+
+      // Render Logs
+      const logs = document.getElementById('admin-audit-log');
+      logs.innerHTML = '';
+      if (res.stats.audit.length === 0) {
+        logs.innerHTML = '<div>No active registrations audit trails located.</div>';
+      } else {
+        res.stats.audit.forEach(entry => {
+          const row = document.createElement('div');
+          row.style.marginBottom = '6px';
+          row.innerHTML = `&gt; Player <span style="color:var(--color-secondary);">${entry.username}</span> registered in: [${entry.tourneys.join(', ')}]`;
+          logs.appendChild(row);
+        });
+      }
+    }
+  } catch (err) {
+    showToast(`Failed loading stats logs: ${err.message}`, 'warning');
+  }
+}
+
+function renderAdminTourneysList() {
+  const container = document.getElementById('admin-tourneys-delete-list');
+  if (!container) return;
+
+  container.innerHTML = '';
+  TOURNAMENTS_DATA.forEach(t => {
+    const row = document.createElement('div');
+    row.className = 'admin-item-row';
+    row.innerHTML = `
+      <div>
+        <strong>${t.title}</strong>
+        <div style="font-size:0.75rem; color:var(--color-text-muted);">${t.date} | ${t.prize}</div>
+      </div>
+      <button class="admin-del-btn" data-id="${t.id}">Delete</button>
+    `;
+    container.appendChild(row);
+  });
+
+  container.querySelectorAll('.admin-del-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const tourneyId = btn.getAttribute('data-id');
+      SynthAudio.playClick();
+      try {
+        const res = await requestAPI('/admin/tournaments/delete', 'POST', { username: appState.username, tournamentId: tourneyId });
+        if (res.success && res.tournaments) {
+          TOURNAMENTS_DATA.length = 0;
+          TOURNAMENTS_DATA.push(...res.tournaments);
+          renderTournaments();
+          renderAdminTourneysList();
+          loadAdminStats();
+          showToast('Tournament deleted successfully.', 'success');
+        }
+      } catch (err) {
+        showToast(err.message, 'warning');
+      }
+    });
+  });
+}
+
+function renderAdminStoreList() {
+  const container = document.getElementById('admin-store-preview-list');
+  if (!container) return;
+
+  container.innerHTML = '';
+  STORE_ITEMS.forEach(item => {
+    const row = document.createElement('div');
+    row.className = 'admin-item-row';
+    row.innerHTML = `
+      <div>
+        <span>${item.emoji} <strong>${item.name}</strong></span>
+        <div style="font-size:0.75rem; color:var(--color-text-muted);">${item.cost} XP cost</div>
+      </div>
+      <span style="font-size:0.8rem; color:var(--color-secondary);"><i class="${item.icon}"></i></span>
+    `;
+    container.appendChild(row);
+  });
+}
+
+// Admin Tab View Swapper
+function setupAdminTabs() {
+  const btnStats = document.getElementById('admin-tab-stats');
+  const btnTourneys = document.getElementById('admin-tab-tourneys');
+  const btnStore = document.getElementById('admin-tab-store');
+
+  const panelStats = document.getElementById('admin-panel-stats');
+  const panelTourneys = document.getElementById('admin-panel-tourneys');
+  const panelStore = document.getElementById('admin-panel-store');
+
+  function resetActive() {
+    [btnStats, btnTourneys, btnStore].forEach(b => b.classList.remove('active'));
+    [panelStats, panelTourneys, panelStore].forEach(p => p.style.display = 'none');
+  }
+
+  btnStats.onclick = () => {
+    resetActive();
+    btnStats.classList.add('active');
+    panelStats.style.display = 'block';
+    loadAdminStats();
+  };
+
+  btnTourneys.onclick = () => {
+    resetActive();
+    btnTourneys.classList.add('active');
+    panelTourneys.style.display = 'block';
+    renderAdminTourneysList();
+  };
+
+  btnStore.onclick = () => {
+    resetActive();
+    btnStore.classList.add('active');
+    panelStore.style.display = 'block';
+    renderAdminStoreList();
+  };
+}
+
+// Add new Tournament Form submission
+async function handleAdminAddTourney(e) {
+  e.preventDefault();
+  const title = document.getElementById('admin-t-title').value.trim();
+  const prize = document.getElementById('admin-t-prize').value.trim();
+  const slotsMax = document.getElementById('admin-t-slots').value;
+  const tag = document.getElementById('admin-t-tag').value.trim();
+
+  const newTourney = { title, prize, slotsMax, tag };
+
+  try {
+    const res = await requestAPI('/admin/tournaments', 'POST', { username: appState.username, tournament: newTourney });
+    if (res.success && res.tournaments) {
+      TOURNAMENTS_DATA.length = 0;
+      TOURNAMENTS_DATA.push(...res.tournaments);
+      renderTournaments();
+      renderAdminTourneysList();
+      loadAdminStats();
+      document.getElementById('admin-add-tourney-form').reset();
+      SynthAudio.playLevelUp();
+      showToast('Tournament bracket deployed live.', 'success');
+    }
+  } catch (err) {
+    SynthAudio.playError();
+    showToast(err.message, 'warning');
+  }
+}
+
+// Add new Store Item Form submission
+async function handleAdminAddStoreItem(e) {
+  e.preventDefault();
+  const name = document.getElementById('admin-s-name').value.trim();
+  const cost = document.getElementById('admin-s-cost').value;
+  const icon = document.getElementById('admin-s-icon').value.trim();
+  const emoji = document.getElementById('admin-s-emoji').value.trim();
+
+  const newItem = { name, cost, icon, emoji };
+
+  try {
+    const res = await requestAPI('/admin/store', 'POST', { username: appState.username, storeItem: newItem });
+    if (res.success && res.store) {
+      STORE_ITEMS.length = 0;
+      STORE_ITEMS.push(...res.store);
+      renderStore();
+      renderAdminStoreList();
+      loadAdminStats();
+      document.getElementById('admin-add-item-form').reset();
+      SynthAudio.playLevelUp();
+      showToast('Cosmetic Skin added to Redemptions Store.', 'success');
+    }
+  } catch (err) {
+    SynthAudio.playError();
+    showToast(err.message, 'warning');
+  }
+}
+
+// ==========================================
+// 9. ELEMENT MOUNT & GLOBAL ROUTING
+// ==========================================
+
 let currentSlideIndex = 0;
 
 function initSlider() {
@@ -1363,7 +1474,6 @@ function initSlider() {
   });
 }
 
-// Modal Toggle Hooks
 function openModal(modalId) {
   const overlay = document.getElementById(modalId);
   if (overlay) overlay.classList.add('active');
@@ -1471,21 +1581,18 @@ function initScrollSpy() {
   });
 }
 
-// DOM Setup Mount
+// DOM mount setup
 document.addEventListener('DOMContentLoaded', () => {
   loadAppState();
-
-  renderGames();
-  renderTournaments();
-  renderStore();
 
   initSlider();
   initLatencyMonitor();
   initMobileMenu();
   initScrollObserver();
   initScrollSpy();
+  setupAdminTabs();
 
-  // Search logic
+  // Search logic listeners
   const searchInput = document.getElementById('game-search');
   const filterTabs = document.querySelectorAll('#game-filter-tabs .filter-tab');
   let currentCategory = 'all';
@@ -1507,7 +1614,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Sound Volume Trigger
+  // Sound Volume nodes setup
   const volumeSlider = document.getElementById('sound-volume');
   if (volumeSlider) {
     volumeSlider.addEventListener('input', (e) => {
@@ -1517,12 +1624,23 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Trigger login modals
+  // Trigger login modal
   const authTrigger = document.getElementById('auth-trigger-btn');
   if (authTrigger) {
     authTrigger.addEventListener('click', () => {
       SynthAudio.playClick();
       openModal('auth-modal');
+    });
+  }
+
+  // Trigger admin panel modal
+  const adminNavTrigger = document.getElementById('admin-nav-trigger');
+  if (adminNavTrigger) {
+    adminNavTrigger.addEventListener('click', (e) => {
+      e.preventDefault();
+      SynthAudio.playClick();
+      openModal('admin-modal');
+      loadAdminStats();
     });
   }
 
@@ -1534,27 +1652,34 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Bind close buttons
+  // Bind closes
   document.getElementById('auth-modal-close').addEventListener('click', () => closeModal('auth-modal'));
   document.getElementById('tournament-modal-close').addEventListener('click', () => closeModal('tournament-modal'));
   document.getElementById('profile-drawer-close').addEventListener('click', () => toggleProfileDrawer(false));
+  document.getElementById('admin-modal-close').addEventListener('click', () => closeModal('admin-modal'));
 
-  // Forms Submissions
+  // Form binds
   const authForm = document.getElementById('auth-form');
   if (authForm) authForm.addEventListener('submit', handleAuthSubmit);
 
   const tourneyForm = document.getElementById('tournament-registration-form');
   if (tourneyForm) tourneyForm.addEventListener('submit', handleTournamentFormSubmit);
 
+  const adminTourneyForm = document.getElementById('admin-add-tourney-form');
+  if (adminTourneyForm) adminTourneyForm.addEventListener('submit', handleAdminAddTourney);
+
+  const adminStoreForm = document.getElementById('admin-add-item-form');
+  if (adminStoreForm) adminStoreForm.addEventListener('submit', handleAdminAddStoreItem);
+
   // Checkin claim
   const checkinBtn = document.getElementById('daily-checkin-claim-btn');
   if (checkinBtn) checkinBtn.addEventListener('click', handleDailyCheckin);
 
-  // Logout Session
+  // Logout session
   const logoutBtn = document.getElementById('logout-btn');
   if (logoutBtn) logoutBtn.addEventListener('click', handleLogout);
 
-  // Modal backdrop click closes
+  // Modal overlays click closes
   document.querySelectorAll('.modal-overlay').forEach(overlay => {
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) {
@@ -1563,7 +1688,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Counter Fluctuations
+  // Stats Counters Fluctuations
   setInterval(() => {
     const depNode = document.getElementById('stat-deployments');
     const playNode = document.getElementById('stat-players');

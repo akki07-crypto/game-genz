@@ -1,4 +1,4 @@
-// GAME X HUB - Express & MongoDB Backend Server
+// GAME X HUB - Express & MongoDB Backend Server (With RBAC Admin Dashboard)
 
 const express = require('express');
 const mongoose = require('mongoose');
@@ -46,7 +46,8 @@ const UserSchema = new mongoose.Schema({
   }],
   registrations: [String],
   viewedLatencyIndices: [Number],
-  completedQuests: [String]
+  completedQuests: [String],
+  isAdmin: { type: Boolean, default: false }
 });
 
 const UserModel = mongoose.model('User', UserSchema);
@@ -56,20 +57,24 @@ const memoryDB = new Map();
 
 // Helper to find or create user profile
 async function getPlayerProfile(username, defaultRole = 'Tactician') {
+  const isUserAdmin = username.toLowerCase() === 'admin';
+  const finalRole = isUserAdmin ? 'Server Administrator' : defaultRole;
+  
   if (dbFallbackMode) {
     const key = username.toLowerCase();
     if (!memoryDB.has(key)) {
       memoryDB.set(key, {
         username,
-        role: defaultRole,
-        points: 150,
-        level: 1,
+        role: finalRole,
+        points: isUserAdmin ? 9999 : 150,
+        level: isUserAdmin ? 99 : 1,
         lastCheckInDate: null,
         checkInStreak: 0,
         inventory: [],
         registrations: [],
         viewedLatencyIndices: [],
-        completedQuests: []
+        completedQuests: [],
+        isAdmin: isUserAdmin
       });
       console.log(`[InMemoryDB] Created profile for: ${username}`);
     }
@@ -79,13 +84,14 @@ async function getPlayerProfile(username, defaultRole = 'Tactician') {
     if (!user) {
       user = new UserModel({
         username,
-        role: defaultRole,
-        points: 150,
-        level: 1,
+        role: finalRole,
+        points: isUserAdmin ? 9999 : 150,
+        level: isUserAdmin ? 99 : 1,
         inventory: [],
         registrations: [],
         viewedLatencyIndices: [],
-        completedQuests: []
+        completedQuests: [],
+        isAdmin: isUserAdmin
       });
       await user.save();
       console.log(`[MongoDB] Created profile for: ${username}`);
@@ -112,9 +118,50 @@ function getTodayString() {
 }
 
 // ==========================================
-// IN-MEMORY TOURNAMENT SLOTS STATE
+// DYNAMIC SERVER STATE (TOURNAMENTS & SHOP)
 // ==========================================
-// Maintain tournament slot registration increments on the server
+
+let TOURNAMENTS_LIST = [
+  {
+    id: 'val-cyber-cup',
+    title: 'Valorant Cyber Cup',
+    prize: '5,000 XP',
+    slotsMax: 16,
+    date: 'July 20, 2026',
+    time: '18:00 UTC',
+    tag: '5v5 Tactical',
+    status: 'live'
+  },
+  {
+    id: 'league-masters',
+    title: 'League of Masters',
+    prize: '7,500 XP',
+    slotsMax: 32,
+    date: 'July 24, 2026',
+    time: '19:00 UTC',
+    tag: '5v5 MOBA',
+    status: 'upcoming'
+  },
+  {
+    id: 'apex-void-run',
+    title: 'Apex Legends Void Run',
+    prize: '6,000 XP',
+    slotsMax: 24,
+    date: 'July 28, 2026',
+    time: '17:00 UTC',
+    tag: 'Trios BR',
+    status: 'upcoming'
+  }
+];
+
+let STORE_ITEMS_LIST = [
+  { id: 'skin-neon-blade', name: 'Neon Blade Skin', cost: 200, emoji: '⚔️', icon: 'fa-solid fa-wand-magic-sparkles' },
+  { id: 'hud-overlay', name: 'Cyberpunk HUD', cost: 350, emoji: '📐', icon: 'fa-solid fa-compass-drafting' },
+  { id: 'avatar-border', name: 'Glitch Border', cost: 150, emoji: '🟢', icon: 'fa-solid fa-circle-nodes' },
+  { id: 'weapon-wrap', name: 'Matrix Wrap', cost: 450, emoji: '🔫', icon: 'fa-solid fa-gun' }
+];
+
+// Maintain slots registration counts
 const TOURNAMENT_SLOTS = {
   'val-cyber-cup': 12,
   'league-masters': 24,
@@ -124,6 +171,16 @@ const TOURNAMENT_SLOTS = {
 // ==========================================
 // REST API ENDPOINTS
 // ==========================================
+
+// Get dynamic tournaments list
+app.get('/api/tournaments', (req, res) => {
+  res.json({ success: true, tournaments: TOURNAMENTS_LIST });
+});
+
+// Get dynamic store items list
+app.get('/api/store', (req, res) => {
+  res.json({ success: true, store: STORE_ITEMS_LIST });
+});
 
 // 1. Authenticate / Connect Player Profile
 app.post('/api/auth/connect', async (req, res) => {
@@ -135,8 +192,12 @@ app.post('/api/auth/connect', async (req, res) => {
 
     const player = await getPlayerProfile(username, role);
     
-    // Optionally update player specialty role if supplied
-    if (role && player.role !== role) {
+    // Set admin bypass flags
+    if (username.toLowerCase() === 'admin' && !player.isAdmin) {
+      player.isAdmin = true;
+      player.role = 'Server Administrator';
+      await savePlayerProfile(player);
+    } else if (role && player.role !== role && username.toLowerCase() !== 'admin') {
       player.role = role;
       await savePlayerProfile(player);
     }
@@ -178,8 +239,10 @@ app.post('/api/user/checkin', async (req, res) => {
     player.lastCheckInDate = today;
     player.checkInStreak = nextStreak > 7 ? 1 : nextStreak; // loop streak after 7 days
     
-    // Auto update level
-    player.level = Math.floor(player.points / 100) + 1;
+    // Auto update level (exclude admin overrides)
+    if (player.username.toLowerCase() !== 'admin') {
+      player.level = Math.floor(player.points / 100) + 1;
+    }
 
     await savePlayerProfile(player);
     res.json({ success: true, player, xpPayout, streak: player.checkInStreak });
@@ -202,7 +265,9 @@ app.post('/api/quests/claim', async (req, res) => {
 
     player.points += points;
     player.completedQuests.push(questId);
-    player.level = Math.floor(player.points / 100) + 1;
+    if (player.username.toLowerCase() !== 'admin') {
+      player.level = Math.floor(player.points / 100) + 1;
+    }
 
     await savePlayerProfile(player);
     res.json({ success: true, player });
@@ -225,19 +290,15 @@ app.post('/api/store/redeem', async (req, res) => {
 
     // Deduct cost and add to inventory list
     player.points -= cost;
-    player.level = Math.floor(player.points / 100) + 1;
+    if (player.username.toLowerCase() !== 'admin') {
+      player.level = Math.floor(player.points / 100) + 1;
+    }
 
     const existingItem = player.inventory.find(i => i.itemId === itemId);
     if (existingItem) {
       existingItem.quantity += 1;
     } else {
       player.inventory.push({ itemId, quantity: 1 });
-    }
-
-    // Check if the User completed the Loot Collector quest
-    if (!player.completedQuests.includes('quest-loot')) {
-      // Auto-unlock/flag the quest trigger state (completed by client claim)
-      console.log(`[Store] Player ${username} earned Quest Loot trigger`);
     }
 
     await savePlayerProfile(player);
@@ -291,7 +352,9 @@ app.post('/api/arcade/score', async (req, res) => {
     
     // Add score points directly as XP points
     player.points += score;
-    player.level = Math.floor(player.points / 100) + 1;
+    if (player.username.toLowerCase() !== 'admin') {
+      player.level = Math.floor(player.points / 100) + 1;
+    }
 
     await savePlayerProfile(player);
     res.json({ success: true, player, pointsAwarded: score });
@@ -312,6 +375,140 @@ app.post('/api/user/latency', async (req, res) => {
     }
     
     res.json({ success: true, player });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
+// SERVER-SIDE ADMINISTRATIVE API ENDPOINTS
+// ==========================================
+
+// Helper to check if requester username is Admin
+async function verifyAdminAuth(username) {
+  if (!username) return false;
+  const user = await getPlayerProfile(username);
+  return user && user.isAdmin;
+}
+
+// 10. Fetch Admin Dashboard stats
+app.post('/api/admin/stats', async (req, res) => {
+  try {
+    const { username } = req.body;
+    if (!(await verifyAdminAuth(username))) {
+      return res.status(403).json({ error: 'Access denied. Administrator clearance required.' });
+    }
+
+    let userCount = 0;
+    let auditList = [];
+
+    if (dbFallbackMode) {
+      userCount = memoryDB.size;
+      for (const [key, value] of memoryDB.entries()) {
+        if (value.registrations.length > 0) {
+          auditList.push({
+            username: value.username,
+            tourneys: value.registrations
+          });
+        }
+      }
+    } else {
+      userCount = await UserModel.countDocuments();
+      const activeUsers = await UserModel.find({ 'registrations.0': { $exists: true } });
+      auditList = activeUsers.map(u => ({ username: u.username, tourneys: u.registrations }));
+    }
+
+    res.json({
+      success: true,
+      stats: {
+        totalPlayers: userCount,
+        tournamentsCount: TOURNAMENTS_LIST.length,
+        storeItemsCount: STORE_ITEMS_LIST.length,
+        databaseMode: dbFallbackMode ? 'Resilient In-Memory DB' : 'MongoDB Connection',
+        audit: auditList
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 11. Create new tournament (Admin only)
+app.post('/api/admin/tournaments', async (req, res) => {
+  try {
+    const { username, tournament } = req.body;
+    if (!(await verifyAdminAuth(username))) {
+      return res.status(403).json({ error: 'Access denied.' });
+    }
+
+    if (!tournament || !tournament.title) {
+      return res.status(400).json({ error: 'Tournament payload invalid.' });
+    }
+
+    // Generate custom unique ID
+    const newId = tournament.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+    const newTourney = {
+      id: newId,
+      title: tournament.title,
+      prize: tournament.prize || '5,000 XP',
+      slotsMax: parseInt(tournament.slotsMax, 10) || 16,
+      date: tournament.date || 'TBD 2026',
+      time: tournament.time || '18:00 UTC',
+      tag: tournament.tag || 'Special PvP',
+      status: 'upcoming'
+    };
+
+    TOURNAMENTS_LIST.push(newTourney);
+    TOURNAMENT_SLOTS[newId] = 0; // Initialize slots registered at 0
+
+    console.log(`[Admin] Added new tournament: ${newTourney.title}`);
+    res.json({ success: true, tournaments: TOURNAMENTS_LIST });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 12. Delete tournament (Admin only)
+app.post('/api/admin/tournaments/delete', async (req, res) => {
+  try {
+    const { username, tournamentId } = req.body;
+    if (!(await verifyAdminAuth(username))) {
+      return res.status(403).json({ error: 'Access denied.' });
+    }
+
+    TOURNAMENTS_LIST = TOURNAMENTS_LIST.filter(t => t.id !== tournamentId);
+    delete TOURNAMENT_SLOTS[tournamentId];
+
+    console.log(`[Admin] Deleted tournament ID: ${tournamentId}`);
+    res.json({ success: true, tournaments: TOURNAMENTS_LIST });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 13. Create new Store Redemptions Item (Admin only)
+app.post('/api/admin/store', async (req, res) => {
+  try {
+    const { username, storeItem } = req.body;
+    if (!(await verifyAdminAuth(username))) {
+      return res.status(403).json({ error: 'Access denied.' });
+    }
+
+    if (!storeItem || !storeItem.name || !storeItem.cost) {
+      return res.status(400).json({ error: 'Store item details invalid.' });
+    }
+
+    const newItem = {
+      id: 'skin-' + storeItem.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      name: storeItem.name,
+      cost: parseInt(storeItem.cost, 10),
+      emoji: storeItem.emoji || '🎁',
+      icon: storeItem.icon || 'fa-solid fa-gift'
+    };
+
+    STORE_ITEMS_LIST.push(newItem);
+    console.log(`[Admin] Added new cosmetic item: ${newItem.name}`);
+    res.json({ success: true, store: STORE_ITEMS_LIST });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
